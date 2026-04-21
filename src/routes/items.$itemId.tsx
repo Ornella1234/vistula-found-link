@@ -24,7 +24,7 @@ function ItemDetailPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [item, setItem] = useState<Item | null>(null);
-  const [poster, setPoster] = useState<Profile | null>(null);
+  const [poster, setPoster] = useState<Poster | null>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
 
@@ -38,12 +38,11 @@ function ItemDetailPage() {
         .maybeSingle();
       if (itemData) {
         setItem(itemData);
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", itemData.user_id)
+        // Use security-definer RPC so contact info is exposed only for active items
+        const { data: contact } = await supabase
+          .rpc("get_item_contact", { _item_id: itemData.id })
           .maybeSingle();
-        setPoster(profile);
+        setPoster(contact ?? null);
       }
       setLoading(false);
     })();
