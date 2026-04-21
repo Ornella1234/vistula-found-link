@@ -266,7 +266,26 @@ function ReportPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Photo (optional)</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Photo (optional)</Label>
+              {photoPreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAiScan}
+                  disabled={scanning}
+                  className="gap-1.5"
+                >
+                  {scanning ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  )}
+                  {scanning ? "Scanning…" : "Auto-fill with AI"}
+                </Button>
+              )}
+            </div>
             {photoPreview ? (
               <div className="relative w-fit">
                 <img src={photoPreview} alt="Preview" className="h-40 rounded-lg border border-border object-cover" />
@@ -285,6 +304,11 @@ function ReportPage() {
                 Click to upload photo (max 5MB)
                 <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
               </label>
+            )}
+            {photoPreview && (
+              <p className="text-xs text-muted-foreground">
+                Tip: Click <span className="font-medium text-foreground">Auto-fill with AI</span> to let AI suggest a title, description, and category from the photo.
+              </p>
             )}
           </div>
 
