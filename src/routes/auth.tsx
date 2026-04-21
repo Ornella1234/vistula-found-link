@@ -39,7 +39,7 @@ function AuthPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!isUniversityEmail(email)) {
-      toast.error(`Only @${ALLOWED_EMAIL_DOMAIN} emails are allowed.`);
+      toast.error(`Only ${ALLOWED_EMAIL_DOMAINS_LABEL} emails are allowed.`);
       return;
     }
     if (password.length < 6) {
@@ -132,12 +132,12 @@ function AuthPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={`yourname@${ALLOWED_EMAIL_DOMAIN}`}
+                    placeholder={`yourname@${ALLOWED_EMAIL_DOMAINS[0]}`}
                     autoComplete="email"
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Only <code className="text-foreground">@{ALLOWED_EMAIL_DOMAIN}</code> emails are accepted.
+                    Students: <code className="text-foreground">@{ALLOWED_EMAIL_DOMAINS[0]}</code> · Staff: <code className="text-foreground">@{ALLOWED_EMAIL_DOMAINS[1]}</code>
                   </p>
                 </div>
 
