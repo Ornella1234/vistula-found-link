@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { z } from "zod";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { useEffect, useState, type FormEvent, type ChangeEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,10 +21,12 @@ import { toast } from "sonner";
 import { Loader2, Upload, X, Sparkles } from "lucide-react";
 import { CATEGORIES, LOCATIONS } from "@/lib/constants";
 
+const reportSearchSchema = z.object({
+  type: fallback(z.enum(["lost", "found"]), "lost").default("lost"),
+});
+
 export const Route = createFileRoute("/report")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    type: search.type === "found" ? "found" : "lost",
-  }),
+  validateSearch: zodValidator(reportSearchSchema),
   component: ReportPage,
   head: () => ({
     meta: [
