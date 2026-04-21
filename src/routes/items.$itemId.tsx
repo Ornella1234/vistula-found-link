@@ -10,7 +10,7 @@ import { ArrowLeft, MapPin, Calendar, Mail, CheckCircle2, Trash2, Loader2 } from
 import type { Database } from "@/integrations/supabase/types";
 
 type Item = Database["public"]["Tables"]["items"]["Row"];
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Poster = { full_name: string | null; email: string | null };
 
 export const Route = createFileRoute("/items/$itemId")({
   component: ItemDetailPage,
