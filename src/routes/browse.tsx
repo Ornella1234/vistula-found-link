@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/Header";
@@ -17,10 +19,12 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Item = Database["public"]["Tables"]["items"]["Row"];
 
+const browseSearchSchema = z.object({
+  q: fallback(z.string(), "").default(""),
+});
+
 export const Route = createFileRoute("/browse")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    q: typeof search.q === "string" ? search.q : "",
-  }),
+  validateSearch: zodValidator(browseSearchSchema),
   component: BrowsePage,
   head: () => ({
     meta: [
