@@ -44,6 +44,12 @@ export const Route = createRootRoute({
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "FoundIt — Vistula University Lost & Found" },
+      { name: "description", content: "FoundIt: Vistula's Lost & Found is a web application for managing lost and found items at Vistula University." },
+      { property: "og:description", content: "FoundIt: Vistula's Lost & Found is a web application for managing lost and found items at Vistula University." },
+      { name: "twitter:description", content: "FoundIt: Vistula's Lost & Found is a web application for managing lost and found items at Vistula University." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/99711b1d-1f37-4d6c-9c36-957165fc23a6/id-preview-4515ccce--af13897e-d7e1-4120-9203-064baf7ba75e.lovable.app-1776766477219.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/99711b1d-1f37-4d6c-9c36-957165fc23a6/id-preview-4515ccce--af13897e-d7e1-4120-9203-064baf7ba75e.lovable.app-1776766477219.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
