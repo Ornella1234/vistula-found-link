@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Upload, X, Sparkles } from "lucide-react";
+import { Loader2, Upload, X, Sparkles, ArrowLeft, CheckCircle2, ImageIcon } from "lucide-react";
 import { CATEGORIES, LOCATIONS } from "@/lib/constants";
 
 const reportSearchSchema = z.object({
@@ -51,6 +51,7 @@ function ReportPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<"edit" | "review">("edit");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -116,14 +117,18 @@ function ReportPage() {
     }
   }
 
-  const handleSubmit = async (e: FormEvent) => {
+  const goToReview = (e: FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-
     if (!title.trim() || !description.trim() || !category || !location) {
       toast.error("Please fill in all required fields.");
       return;
     }
+    setStep("review");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSubmit = async () => {
+    if (!user) return;
 
     setSubmitting(true);
     try {
@@ -188,150 +193,231 @@ function ReportPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
-          <div className="space-y-2">
-            <Label>I'm reporting a...</Label>
-            <Tabs value={type} onValueChange={(v) => setType(v as "lost" | "found")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="lost">🔍 Lost item</TabsTrigger>
-                <TabsTrigger value="found">✋ Found item</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="title">
-              Title <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={type === "lost" ? "e.g. Black iPhone 13 with cracked screen" : "e.g. Set of keys with red keychain"}
-              maxLength={120}
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="description">
-              Description <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe distinguishing features, color, brand, contents..."
-              rows={4}
-              maxLength={1000}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              For lost items, hold back one detail to verify the finder. For found items, avoid revealing all details (helps verify owner).
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label>
-                Category <span className="text-destructive">*</span>
-              </Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        {step === "edit" ? (
+          <form onSubmit={goToReview} className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+            <div className="space-y-2">
+              <Label>I'm reporting a...</Label>
+              <Tabs value={type} onValueChange={(v) => setType(v as "lost" | "found")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="lost">🔍 Lost item</TabsTrigger>
+                  <TabsTrigger value="found">✋ Found item</TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
+
             <div className="space-y-1.5">
-              <Label>
-                Location <span className="text-destructive">*</span>
+              <Label htmlFor="title">
+                Title <span className="text-destructive">*</span>
               </Label>
-              <Select value={location} onValueChange={setLocation}>
-                <SelectTrigger><SelectValue placeholder="Where on campus?" /></SelectTrigger>
-                <SelectContent>
-                  {LOCATIONS.map((l) => (
-                    <SelectItem key={l} value={l}>{l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={type === "lost" ? "e.g. Black iPhone 13 with cracked screen" : "e.g. Set of keys with red keychain"}
+                maxLength={120}
+                required
+              />
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="eventDate">
-              {type === "lost" ? "When did you lose it?" : "When did you find it?"}{" "}
-              <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="eventDate"
-              type="date"
-              value={eventDate}
-              onChange={(e) => setEventDate(e.target.value)}
-              max={new Date().toISOString().slice(0, 10)}
-              required
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="description">
+                Description <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe distinguishing features, color, brand, contents..."
+                rows={4}
+                maxLength={1000}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                For lost items, hold back one detail to verify the finder. For found items, avoid revealing all details (helps verify owner).
+              </p>
+            </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <Label>Photo (optional)</Label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label>
+                  Category <span className="text-destructive">*</span>
+                </Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>
+                  Location <span className="text-destructive">*</span>
+                </Label>
+                <Select value={location} onValueChange={setLocation}>
+                  <SelectTrigger><SelectValue placeholder="Where on campus?" /></SelectTrigger>
+                  <SelectContent>
+                    {LOCATIONS.map((l) => (
+                      <SelectItem key={l} value={l}>{l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="eventDate">
+                {type === "lost" ? "When did you lose it?" : "When did you find it?"}{" "}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="eventDate"
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <Label>Photo (optional)</Label>
+                {photoPreview && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAiScan}
+                    disabled={scanning}
+                    className="gap-1.5"
+                  >
+                    {scanning ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    )}
+                    {scanning ? "Scanning…" : "Auto-fill with AI"}
+                  </Button>
+                )}
+              </div>
+              {photoPreview ? (
+                <div className="relative w-fit">
+                  <img src={photoPreview} alt="Preview" className="h-40 rounded-lg border border-border object-cover" />
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md hover:bg-destructive/90"
+                    aria-label="Remove photo"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface px-4 py-8 text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                  <Upload className="h-5 w-5" />
+                  Click to upload photo (max 5MB)
+                  <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
+                </label>
+              )}
               {photoPreview && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAiScan}
-                  disabled={scanning}
-                  className="gap-1.5"
-                >
-                  {scanning ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  )}
-                  {scanning ? "Scanning…" : "Auto-fill with AI"}
-                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Tip: Click <span className="font-medium text-foreground">Auto-fill with AI</span> to let AI suggest a title, description, and category from the photo.
+                </p>
               )}
             </div>
-            {photoPreview ? (
-              <div className="relative w-fit">
-                <img src={photoPreview} alt="Preview" className="h-40 rounded-lg border border-border object-cover" />
-                <button
-                  type="button"
-                  onClick={removePhoto}
-                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md hover:bg-destructive/90"
-                  aria-label="Remove photo"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface px-4 py-8 text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">
-                <Upload className="h-5 w-5" />
-                Click to upload photo (max 5MB)
-                <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
-              </label>
-            )}
-            {photoPreview && (
-              <p className="text-xs text-muted-foreground">
-                Tip: Click <span className="font-medium text-foreground">Auto-fill with AI</span> to let AI suggest a title, description, and category from the photo.
-              </p>
-            )}
-          </div>
 
-          <div className="flex gap-3 pt-2">
-            <Link to="/" className="flex-1">
-              <Button type="button" variant="outline" className="w-full">Cancel</Button>
-            </Link>
-            <Button type="submit" disabled={submitting} className="flex-1 font-semibold" size="lg">
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Post item
-            </Button>
+            <div className="flex gap-3 pt-2">
+              <Link to="/" className="flex-1">
+                <Button type="button" variant="outline" className="w-full">Cancel</Button>
+              </Link>
+              <Button type="submit" className="flex-1 font-semibold" size="lg">
+                Review post
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+            <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary-soft/50 p-4">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div className="text-sm">
+                <p className="font-semibold text-foreground">Almost there — give it a quick read.</p>
+                <p className="text-muted-foreground">Once posted, your item will be visible to the Vistula community.</p>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-border">
+              {photoPreview ? (
+                <img src={photoPreview} alt="Preview" className="h-56 w-full object-cover" />
+              ) : (
+                <div className="flex h-40 w-full items-center justify-center bg-muted text-muted-foreground">
+                  <ImageIcon className="mr-2 h-5 w-5" />
+                  <span className="text-sm">No photo attached</span>
+                </div>
+              )}
+              <div className="space-y-4 p-5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      type === "lost"
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-accent-soft text-accent-foreground"
+                    }`}
+                  >
+                    {type === "lost" ? "Lost" : "Found"}
+                  </span>
+                  <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-semibold text-primary">
+                    {category}
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold tracking-tight">{title}</h2>
+                <p className="whitespace-pre-wrap text-sm text-muted-foreground">{description}</p>
+                <dl className="grid gap-3 border-t border-border pt-4 text-sm sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</dt>
+                    <dd className="mt-0.5 font-medium">{location}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {type === "lost" ? "Lost on" : "Found on"}
+                    </dt>
+                    <dd className="mt-0.5 font-medium">
+                      {new Date(eventDate).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setStep("edit")}
+                disabled={submitting}
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Edit details
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={submitting}
+                className="flex-1 font-semibold"
+                size="lg"
+              >
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirm & post
+              </Button>
+            </div>
           </div>
-        </form>
+        )}
       </div>
     </div>
   );

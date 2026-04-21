@@ -13,6 +13,7 @@ import { Route as ReportRouteImport } from './routes/report'
 import { Route as MyItemsRouteImport } from './routes/my-items'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AiSearchRouteImport } from './routes/ai-search'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ItemsItemIdRouteImport } from './routes/items.$itemId'
 
@@ -36,6 +37,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiSearchRoute = AiSearchRouteImport.update({
+  id: '/ai-search',
+  path: '/ai-search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -49,6 +55,7 @@ const ItemsItemIdRoute = ItemsItemIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-search': typeof AiSearchRoute
   '/auth': typeof AuthRoute
   '/browse': typeof BrowseRoute
   '/my-items': typeof MyItemsRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-search': typeof AiSearchRoute
   '/auth': typeof AuthRoute
   '/browse': typeof BrowseRoute
   '/my-items': typeof MyItemsRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-search': typeof AiSearchRoute
   '/auth': typeof AuthRoute
   '/browse': typeof BrowseRoute
   '/my-items': typeof MyItemsRoute
@@ -76,16 +85,25 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ai-search'
     | '/auth'
     | '/browse'
     | '/my-items'
     | '/report'
     | '/items/$itemId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/browse' | '/my-items' | '/report' | '/items/$itemId'
+  to:
+    | '/'
+    | '/ai-search'
+    | '/auth'
+    | '/browse'
+    | '/my-items'
+    | '/report'
+    | '/items/$itemId'
   id:
     | '__root__'
     | '/'
+    | '/ai-search'
     | '/auth'
     | '/browse'
     | '/my-items'
@@ -95,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiSearchRoute: typeof AiSearchRoute
   AuthRoute: typeof AuthRoute
   BrowseRoute: typeof BrowseRoute
   MyItemsRoute: typeof MyItemsRoute
@@ -132,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-search': {
+      id: '/ai-search'
+      path: '/ai-search'
+      fullPath: '/ai-search'
+      preLoaderRoute: typeof AiSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -151,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiSearchRoute: AiSearchRoute,
   AuthRoute: AuthRoute,
   BrowseRoute: BrowseRoute,
   MyItemsRoute: MyItemsRoute,
