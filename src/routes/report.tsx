@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X, Sparkles } from "lucide-react";
 import { CATEGORIES, LOCATIONS } from "@/lib/constants";
 
 export const Route = createFileRoute("/report")({
@@ -45,6 +45,7 @@ function ReportPage() {
   const [eventDate, setEventDate] = useState(new Date().toISOString().slice(0, 10));
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -68,6 +69,41 @@ function ReportPage() {
     setPhotoFile(null);
     if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoPreview(null);
+  };
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const handleAiScan = async () => {
+    if (!photoFile) {
+      toast.error("Upload a photo first to scan it.");
+      return;
+    }
+    setScanning(true);
+    try {
+      const dataUrl = await fileToDataUrl(photoFile);
+      const { data, error } = await supabase.functions.invoke("scan-item", {
+        body: { imageDataUrl: dataUrl, type },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.title) setTitle(String(data.title).slice(0, 120));
+      if (data?.description) setDescription(String(data.description).slice(0, 1000));
+      if (data?.category && (CATEGORIES as readonly string[]).includes(data.category)) {
+        setCategory(data.category);
+      }
+      toast.success("AI filled in the details — review and edit before posting.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "AI scan failed";
+      toast.error(message);
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
