@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Search, Loader2 } from "lucide-react";
-import { isUniversityEmail, ALLOWED_EMAIL_DOMAIN } from "@/lib/constants";
+import { isUniversityEmail, ALLOWED_EMAIL_DOMAINS_LABEL, ALLOWED_EMAIL_DOMAINS } from "@/lib/constants";
 import { useEffect } from "react";
 
 export const Route = createFileRoute("/auth")({
