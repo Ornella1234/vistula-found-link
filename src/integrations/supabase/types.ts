@@ -91,7 +91,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_item_contact: {
+        Args: { _item_id: string }
+        Returns: {
+          email: string
+          full_name: string
+        }[]
+      }
     }
     Enums: {
       item_status: "active" | "resolved"
