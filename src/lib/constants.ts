@@ -27,8 +27,14 @@ export const LOCATIONS = [
 export type Category = (typeof CATEGORIES)[number];
 export type Location = (typeof LOCATIONS)[number];
 
-export const ALLOWED_EMAIL_DOMAIN = "vistula.edu.pl";
+export const ALLOWED_EMAIL_DOMAINS = [
+  "stu.vistula.edu.pl", // students
+  "vistula.edu.pl", // staff
+] as const;
+
+export const ALLOWED_EMAIL_DOMAINS_LABEL = "@stu.vistula.edu.pl or @vistula.edu.pl";
 
 export function isUniversityEmail(email: string): boolean {
-  return email.trim().toLowerCase().endsWith(`@${ALLOWED_EMAIL_DOMAIN}`);
+  const normalized = email.trim().toLowerCase();
+  return ALLOWED_EMAIL_DOMAINS.some((d) => normalized.endsWith(`@${d}`));
 }
