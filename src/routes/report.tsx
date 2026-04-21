@@ -75,40 +75,46 @@ function ReportPage() {
     setPhotoPreview(null);
   };
 
-  const fileToDataUrl = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
+  // turn the picked file into a base64 data url so we can send it to the function
+  function readAsDataUrl(file: File) {
+    return new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(file);
     });
+  }
 
-  const handleAiScan = async () => {
+  async function handleAiScan() {
     if (!photoFile) {
       toast.error("Upload a photo first to scan it.");
       return;
     }
+
     setScanning(true);
     try {
-      const dataUrl = await fileToDataUrl(photoFile);
+      const dataUrl = await readAsDataUrl(photoFile);
       const { data, error } = await supabase.functions.invoke("scan-item", {
         body: { imageDataUrl: dataUrl, type },
       });
+
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+
+      // only fill in the fields we got back, keep what the user already typed otherwise
       if (data?.title) setTitle(String(data.title).slice(0, 120));
       if (data?.description) setDescription(String(data.description).slice(0, 1000));
       if (data?.category && (CATEGORIES as readonly string[]).includes(data.category)) {
         setCategory(data.category);
       }
-      toast.success("AI filled in the details — review and edit before posting.");
+
+      toast.success("Details filled in — give them a quick read before posting.");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "AI scan failed";
-      toast.error(message);
+      toast.error(err instanceof Error ? err.message : "Scan failed, try again.");
     } finally {
       setScanning(false);
     }
-  };
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
