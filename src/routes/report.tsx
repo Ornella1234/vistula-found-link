@@ -51,6 +51,7 @@ function ReportPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState<"edit" | "review">("edit");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -116,14 +117,18 @@ function ReportPage() {
     }
   }
 
-  const handleSubmit = async (e: FormEvent) => {
+  const goToReview = (e: FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-
     if (!title.trim() || !description.trim() || !category || !location) {
       toast.error("Please fill in all required fields.");
       return;
     }
+    setStep("review");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSubmit = async () => {
+    if (!user) return;
 
     setSubmitting(true);
     try {
