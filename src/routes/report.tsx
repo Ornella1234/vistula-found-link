@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Upload, X } from "lucide-react";
+import { Loader2, Upload, X, Sparkles } from "lucide-react";
 import { CATEGORIES, LOCATIONS } from "@/lib/constants";
 
 export const Route = createFileRoute("/report")({
@@ -45,6 +45,7 @@ function ReportPage() {
   const [eventDate, setEventDate] = useState(new Date().toISOString().slice(0, 10));
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -68,6 +69,41 @@ function ReportPage() {
     setPhotoFile(null);
     if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoPreview(null);
+  };
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const handleAiScan = async () => {
+    if (!photoFile) {
+      toast.error("Upload a photo first to scan it.");
+      return;
+    }
+    setScanning(true);
+    try {
+      const dataUrl = await fileToDataUrl(photoFile);
+      const { data, error } = await supabase.functions.invoke("scan-item", {
+        body: { imageDataUrl: dataUrl, type },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.title) setTitle(String(data.title).slice(0, 120));
+      if (data?.description) setDescription(String(data.description).slice(0, 1000));
+      if (data?.category && (CATEGORIES as readonly string[]).includes(data.category)) {
+        setCategory(data.category);
+      }
+      toast.success("AI filled in the details — review and edit before posting.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "AI scan failed";
+      toast.error(message);
+    } finally {
+      setScanning(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -230,7 +266,26 @@ function ReportPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Photo (optional)</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Photo (optional)</Label>
+              {photoPreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAiScan}
+                  disabled={scanning}
+                  className="gap-1.5"
+                >
+                  {scanning ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  )}
+                  {scanning ? "Scanning…" : "Auto-fill with AI"}
+                </Button>
+              )}
+            </div>
             {photoPreview ? (
               <div className="relative w-fit">
                 <img src={photoPreview} alt="Preview" className="h-40 rounded-lg border border-border object-cover" />
@@ -249,6 +304,11 @@ function ReportPage() {
                 Click to upload photo (max 5MB)
                 <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
               </label>
+            )}
+            {photoPreview && (
+              <p className="text-xs text-muted-foreground">
+                Tip: Click <span className="font-medium text-foreground">Auto-fill with AI</span> to let AI suggest a title, description, and category from the photo.
+              </p>
             )}
           </div>
 
