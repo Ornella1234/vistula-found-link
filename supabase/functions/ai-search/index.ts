@@ -1,5 +1,6 @@
-// ai-search: takes a natural language query + the catalogue and asks the model
-// to pick the best matching items (like a smart search)
+// little search helper for the lost & found board
+// takes whatever the student typed + the current posts and asks the model
+// to pick the ones that look like a match
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const cors = {
@@ -7,14 +8,14 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function jsonResponse(body: unknown, status = 200) {
+function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...cors, "Content-Type": "application/json" },
   });
 }
 
-type Item = {
+type Post = {
   id: string;
   type: "lost" | "found";
   title: string;
@@ -28,57 +29,53 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
-    const { query, items } = await req.json() as { query?: string; items?: Item[] };
+    const body = await req.json() as { query?: string; items?: Post[] };
+    const question = (body.query ?? "").trim();
+    const posts = body.items ?? [];
 
-    if (!query || typeof query !== "string" || !query.trim()) {
-      return jsonResponse({ error: "query is required" }, 400);
+    if (!question) return reply({ error: "Type something to search for." }, 400);
+    if (posts.length === 0) {
+      return reply({ matches: [], summary: "Nothing has been posted yet." });
     }
-    if (!Array.isArray(items) || items.length === 0) {
-      return jsonResponse({ matches: [], summary: "No items in the catalogue yet." });
-    }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+    const key = Deno.env.get("LOVABLE_API_KEY");
+    if (!key) throw new Error("LOVABLE_API_KEY is missing");
 
-    // keep the prompt small — only send the fields we need
-    const slim = items.slice(0, 200).map((i) => ({
-      id: i.id,
-      type: i.type,
-      title: i.title,
-      description: i.description.slice(0, 280),
-      category: i.category,
-      location: i.location,
-      date: i.event_date,
+    // trim the payload so we don't send a wall of text to the model
+    const shortlist = posts.slice(0, 200).map((p) => ({
+      id: p.id,
+      type: p.type,
+      title: p.title,
+      description: p.description.slice(0, 280),
+      category: p.category,
+      location: p.location,
+      date: p.event_date,
     }));
 
-    const system = [
-      `You are the search engine for a university lost & found.`,
-      `Given a student's question and a list of posted items, pick the items that most likely match.`,
-      `Be lenient with synonyms (phone = mobile = iPhone, bag = backpack, etc.).`,
-      `Return up to 6 results, ordered best first. Skip anything irrelevant.`,
-      `Also write a short, friendly 1-sentence summary of what you found.`,
-    ].join(" ");
+    const instructions =
+      "You're the search box on our university lost & found board. " +
+      "A student types what they're looking for and you pick the posts that probably match. " +
+      "Be flexible with words (phone/mobile/iPhone, bag/backpack, etc.). " +
+      "Give back up to 6 results, best one first, and skip anything off-topic. " +
+      "Also write one short friendly sentence summing up what you found.";
 
-    const user = `Question: ${query.trim()}\n\nItems:\n${JSON.stringify(slim)}`;
+    const userMsg = `Search: ${question}\n\nPosts:\n${JSON.stringify(shortlist)}`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: system },
-          { role: "user", content: user },
+          { role: "system", content: instructions },
+          { role: "user", content: userMsg },
         ],
         tools: [
           {
             type: "function",
             function: {
               name: "return_matches",
-              description: "Return the best matching items.",
+              description: "Return the posts that match.",
               parameters: {
                 type: "object",
                 properties: {
@@ -89,7 +86,7 @@ serve(async (req) => {
                       type: "object",
                       properties: {
                         id: { type: "string" },
-                        reason: { type: "string", description: "Why this item matches, max 1 sentence." },
+                        reason: { type: "string", description: "Why this one matches, one sentence." },
                       },
                       required: ["id", "reason"],
                       additionalProperties: false,
@@ -107,26 +104,23 @@ serve(async (req) => {
     });
 
     if (!res.ok) {
-      if (res.status === 429) return jsonResponse({ error: "Too many requests, try again in a moment." }, 429);
-      if (res.status === 402) return jsonResponse({ error: "AI credits exhausted." }, 402);
-      console.error("gateway error:", res.status, await res.text());
-      return jsonResponse({ error: "AI search failed" }, 500);
+      if (res.status === 429) return reply({ error: "Slow down a bit and try again." }, 429);
+      if (res.status === 402) return reply({ error: "Out of AI credits." }, 402);
+      console.error("ai gateway said:", res.status, await res.text());
+      return reply({ error: "Search didn't work, sorry." }, 500);
     }
 
-    const payload = await res.json();
-    const call = payload.choices?.[0]?.message?.tool_calls?.[0];
-    if (!call) return jsonResponse({ error: "No structured result from AI" }, 500);
+    const data = await res.json();
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall) return reply({ error: "Got a weird response from the AI." }, 500);
 
-    const parsed = JSON.parse(call.function.arguments) as {
+    const result = JSON.parse(toolCall.function.arguments) as {
       summary: string;
       matches: { id: string; reason: string }[];
     };
-    return jsonResponse(parsed);
-  } catch (err) {
-    console.error("ai-search error:", err);
-    return jsonResponse(
-      { error: err instanceof Error ? err.message : "Unknown error" },
-      500,
-    );
+    return reply(result);
+  } catch (e) {
+    console.error("ai-search blew up:", e);
+    return reply({ error: e instanceof Error ? e.message : "Something went wrong" }, 500);
   }
 });
