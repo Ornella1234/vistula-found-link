@@ -1,4 +1,7 @@
 project_id = "tposianqicuajovgyilj"
 
 [functions.scan-item]
-verify_jwt = false
+verify_jwt = true
+
+[functions.ai-search]
+verify_jwt = true
