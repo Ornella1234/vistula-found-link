@@ -2,8 +2,6 @@
 
 > An AI-powered Lost & Found platform built exclusively for Vistula University students and staff.
 
-![FoundIt](src/assets/logo.png)
-
 ## 🔍 What it does
 
 - Students and staff post **lost** or **found** items with a photo
